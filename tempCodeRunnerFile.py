@@ -1,1 +1,0 @@
-walls[x][y] == True:
