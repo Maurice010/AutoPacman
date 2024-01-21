@@ -1,0 +1,1 @@
+walls[x][y] == True:
