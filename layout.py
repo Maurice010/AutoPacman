@@ -9,7 +9,7 @@ class Layout:
     def getLayout():
         curdir = os.path.dirname(os.path.realpath(__file__))
         os.chdir(curdir)
-        f = open("defaultLayout.txt", "r")
+        f = open("basicMap.txt", "r")
 
         x = 0
         y = 0

@@ -3,6 +3,8 @@ import sys
 from settings import *
 from sprites import *
 from layout import *
+from searchAlgorithms import *
+from searchPlayer import *
 
 class Game:
     def __init__(self, width, height, title):
@@ -12,24 +14,40 @@ class Game:
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(500, 100)
 
+        self.paused = False
+        self.grid_enabled = True
+
+        self.animationCount = 0
+        self.score = 0
+
+    def adjustScreen(self):
+        newWidth = len(self.layout.walls[0]) * 32
+        newHeight = len(self.layout.walls) * 32
+        self.screen = pygame.display.set_mode((newWidth, newHeight))
+
     def new(self):
         self.allSprites = pygame.sprite.Group()
         self.walls = pygame.sprite.Group()
         self.food = pygame.sprite.Group()
         self.layout = Layout.getLayout()
+        self.adjustScreen()
         self.player = Player(self, self.layout.pac_pos[1], self.layout.pac_pos[0])
+        # self.player = AutoPlayer(self, self.layout.pac_pos[1], self.layout.pac_pos[0])
         self.getWalls(self.layout.walls)
         self.getFood(self.layout.food)
+        
+        self.searchProblem = Problem(self)
+        self.ans = DFS(self.searchProblem)
 
     def getWalls(self, walls):
         for x in range(len(walls)):
-            for y in range(len(walls[0])):
+            for y in range(len(walls[x])):
                 if walls[x][y] == True:
                     Wall(self, y, x)
 
     def getFood(self, food):
         for x in range(len(food)):
-            for y in range(len(food[0])):
+            for y in range(len(food[x])):
                 if food[x][y] == True:
                     Food(self, y, x)
 
@@ -39,25 +57,42 @@ class Game:
         for y in range(0, height, tileSize):
             pygame.draw.line(self.screen, (255, 255, 255), (0, y), (width, y))
 
+    def gameOver(self):
+        if len(self.food) == 0:
+            print("Score: ", self.score)
+            self.paused = True
+            
     def run(self):
         self.running = True
         while self.running:
             self.dt = self.clock.tick(60) / 1000
             self.events()
-            self.update()
-            self.draw()
+            if not self.paused:
+                if self.animationCount < 19:
+                    self.animationCount += 1
+                else:
+                    self.animationCount = 0
+                self.update()
+                self.draw()
 
     def events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    self.paused = not self.paused
+                elif event.key == pygame.K_g:
+                    self.grid_enabled = not self.grid_enabled
 
     def update(self):
         self.allSprites.update(self.dt, self.walls)
+        self.gameOver()
 
     def draw(self):
         self.screen.fill("black")
-        self.drawGrid()
+        if self.grid_enabled:
+            self.drawGrid()
         self.allSprites.draw(self.screen)
         pygame.display.flip()
 

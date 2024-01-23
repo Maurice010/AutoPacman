@@ -1,13 +1,14 @@
 import pygame
 from settings import *
+from searchAlgorithms import *
 
-class Player(pygame.sprite.Sprite):
+class AutoPlayer(pygame.sprite.Sprite):
     def __init__(self, game, pos_x, pos_y):
         # General info about the player
         pygame.sprite.Sprite.__init__(self, game.allSprites)
         self.game = game
 
-        # Player movement
+        # Player position
         self.pos = pygame.math.Vector2(pos_x, pos_y) * tileSize
         self.directionVec = pygame.math.Vector2(0, 0)
         self.directionVec_temp = pygame.math.Vector2(0, 0)
@@ -35,7 +36,7 @@ class Player(pygame.sprite.Sprite):
     def validDirection(self):
         x = int(self.rect.centerx // tileSize + self.directionVec_temp.x)
         y = int(self.rect.centery // tileSize + self.directionVec_temp.y)
-
+        
         return not self.game.layout.walls[y][x]
     
     def eat(self):
@@ -48,28 +49,18 @@ class Player(pygame.sprite.Sprite):
             self.game.food.remove(sprites_to_remove)
             self.game.allSprites.remove(sprites_to_remove)
             self.game.score += 10
-
-    def get_keys(self):
-        keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            self.directionVec_temp = pygame.math.Vector2(-1, 0)
-        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            self.directionVec_temp = pygame.math.Vector2(1, 0)
-        elif keys[pygame.K_UP] or keys[pygame.K_w]:
-            self.directionVec_temp = pygame.math.Vector2(0, -1)
-        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            self.directionVec_temp = pygame.math.Vector2(0, 1)
-
-        if self.directionVec_temp != pygame.math.Vector2(0, 0) and not self.between_tiles and self.validDirection():
+    
+    def update(self, dt, walls):
+        if not self.between_tiles and self.validDirection():
+            if len(self.game.ans) != 0:
+                self.directionVec_temp = self.game.ans.pop(0)
+                
             self.directionVec = self.directionVec_temp
             current_tile = self.rect.centerx // tileSize, self.rect.centery // tileSize
             self.last_pos = pygame.math.Vector2(current_tile) * tileSize
             self.next_pos = self.last_pos + self.directionVec * tileSize
             self.between_tiles = True
-    
-    def update(self, dt, walls):
-        self.get_keys()
+
         self.animatePlayer()
         self.eat()
 
@@ -80,13 +71,8 @@ class Player(pygame.sprite.Sprite):
                 self.between_tiles = True
             else:
                 self.pos = self.next_pos
+                self.directionVec_temp = pygame.math.Vector2(0, 0)
                 self.between_tiles = False
-                
-                if self.validDirection():
-                    self.directionVec = self.directionVec_temp
-                current_tile = self.rect.centerx // tileSize, self.rect.centery // tileSize
-                self.last_pos = pygame.math.Vector2(current_tile) * tileSize
-                self.next_pos = self.last_pos + self.directionVec * tileSize
 
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
@@ -99,31 +85,3 @@ class Player(pygame.sprite.Sprite):
             
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
-
-class Wall(pygame.sprite.Sprite):
-    def __init__(self, game, pos_x, pos_y):
-        # General info about the wall
-        self.groups = game.allSprites, game.walls
-        pygame.sprite.Sprite.__init__(self, self.groups)
-        self.x = pos_x
-        self.y = pos_y
-        
-        # Wall graphics
-        self.image = pygame.Surface((tileSize, tileSize))
-        self.image.fill((0,0,255))
-        self.rect = self.image.get_rect()
-        self.rect.x = pos_x * tileSize
-        self.rect.y = pos_y * tileSize
-
-class Food(pygame.sprite.Sprite):
-     def __init__(self, game, pos_x, pos_y):
-        self.groups = game.allSprites, game.food
-        pygame.sprite.Sprite.__init__(self, self.groups)
-        self.x = pos_x
-        self.y = pos_y
-
-        self.image = pygame.Surface((tileSize, tileSize), pygame.SRCALPHA)
-        pygame.draw.circle(self.image, (255, 255, 255), (tileSize // 2, tileSize // 2), foodRadius)
-        self.rect = self.image.get_rect()
-        self.rect.x = pos_x * tileSize
-        self.rect.y = pos_y * tileSize
