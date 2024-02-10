@@ -39,66 +39,8 @@ class Player(pygame.sprite.Sprite):
         return not self.game.layout.walls[y][x]
     
     def eat(self):
-        x = int(self.pos.x // tileSize)
-        y = int(self.pos.y // tileSize)
-
-        if self.game.layout.food[y][x]:
-            self.game.layout.food[y][x] = False
-            sprites_to_remove = [sprite for sprite in self.game.food if sprite.rect.collidepoint(self.pos)]
-            self.game.food.remove(sprites_to_remove)
-            self.game.allSprites.remove(sprites_to_remove)
+        if pygame.sprite.spritecollide(self, self.game.food, True):
             self.game.score += 10
-
-    def get_keys(self):
-        keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            self.directionVec_temp = pygame.math.Vector2(-1, 0)
-        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            self.directionVec_temp = pygame.math.Vector2(1, 0)
-        elif keys[pygame.K_UP] or keys[pygame.K_w]:
-            self.directionVec_temp = pygame.math.Vector2(0, -1)
-        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            self.directionVec_temp = pygame.math.Vector2(0, 1)
-
-        if self.directionVec_temp != pygame.math.Vector2(0, 0) and not self.between_tiles and self.validDirection():
-            self.directionVec = self.directionVec_temp
-            current_tile = self.rect.centerx // tileSize, self.rect.centery // tileSize
-            self.last_pos = pygame.math.Vector2(current_tile) * tileSize
-            self.next_pos = self.last_pos + self.directionVec * tileSize
-            self.between_tiles = True
-    
-    def update(self, dt, walls):
-        self.get_keys()
-        self.animatePlayer()
-        self.eat()
-
-        if self.pos != self.next_pos:
-            delta = self.next_pos - self.pos
-            if delta.length() > (self.directionVec * playerSpeed * dt).length():
-                self.pos += self.directionVec * playerSpeed * dt
-                self.between_tiles = True
-            else:
-                self.pos = self.next_pos
-                self.between_tiles = False
-                
-                if self.validDirection():
-                    self.directionVec = self.directionVec_temp
-                current_tile = self.rect.centerx // tileSize, self.rect.centery // tileSize
-                self.last_pos = pygame.math.Vector2(current_tile) * tileSize
-                self.next_pos = self.last_pos + self.directionVec * tileSize
-
-        self.rect.x = self.pos.x
-        self.rect.y = self.pos.y
-
-        if pygame.sprite.spritecollide(self, walls, False):
-            self.pos = self.last_pos
-            self.next_pos = self.last_pos
-            self.directionVec = pygame.math.Vector2(0, 0)
-            self.between_tiles = False
-            
-        self.rect.x = self.pos.x
-        self.rect.y = self.pos.y
 
 class Wall(pygame.sprite.Sprite):
     def __init__(self, game, pos_x, pos_y):

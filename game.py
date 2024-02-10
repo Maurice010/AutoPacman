@@ -6,6 +6,16 @@ from layout import *
 from searchAlgorithms import *
 from searchPlayer import *
 
+class Stopwatch:
+    def __init__(self, screen):
+        self.font = pygame.font.SysFont("Comic Sans MS", 15)
+        self.screen = screen
+    
+    def showTime(self, time):
+        time_str =  str(int(time * 10) / 10)
+        text = self.font.render(f"Time: {time_str}", 1, (255,0,0))
+        self.screen.blit(text, (4, 4))
+
 class Game:
     def __init__(self, width, height, title):
         pygame.init()
@@ -14,11 +24,14 @@ class Game:
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(500, 100)
 
+        self.time_seconds = 0
+        self.stopwatch = Stopwatch(self.screen)
+
         self.paused = False
         self.grid_enabled = True
 
-        self.animationCount = 0
-        self.score = 0
+        self.animationCount = 0 # Zmienna uzywana do animacji Pacmana
+        self.score = 0 # Zmienna przechowujaca zdobyte punkty
 
     def adjustScreen(self):
         newWidth = len(self.layout.walls[0]) * 32
@@ -26,16 +39,20 @@ class Game:
         self.screen = pygame.display.set_mode((newWidth, newHeight))
 
     def new(self):
+        # Wczytywanie elementow i ich grupowanie
         self.allSprites = pygame.sprite.Group()
         self.walls = pygame.sprite.Group()
         self.food = pygame.sprite.Group()
-        self.layout = Layout.getLayout()
+        self.layout = Layout.getLayout() # Dostosowanie szerokosci ekranu do mapy
         self.adjustScreen()
-        self.player = Player(self, self.layout.pac_pos[1], self.layout.pac_pos[0])
-        # self.player = AutoPlayer(self, self.layout.pac_pos[1], self.layout.pac_pos[0])
         self.getWalls(self.layout.walls)
         self.getFood(self.layout.food)
         
+        # Odkomentowanie tej wersji zamiast tej niżej da kontrole uzytkownikowi nad Pacmanem
+        # self.player = HumanPlayer(self, self.layout.pac_pos[1], self.layout.pac_pos[0])
+
+        # Automatyczny Pacman
+        self.player = AutoPlayer(self, self.layout.pac_pos[1], self.layout.pac_pos[0])
         self.searchProblem = Problem(self)
         self.ans = DFS(self.searchProblem)
 
@@ -74,6 +91,9 @@ class Game:
                     self.animationCount = 0
                 self.update()
                 self.draw()
+                self.time_seconds += self.dt
+
+
 
     def events(self):
         for event in pygame.event.get():
@@ -94,6 +114,7 @@ class Game:
         if self.grid_enabled:
             self.drawGrid()
         self.allSprites.draw(self.screen)
+        self.stopwatch.showTime(self.time_seconds)
         pygame.display.flip()
 
     def quit(self):
